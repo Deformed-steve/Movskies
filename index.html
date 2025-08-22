@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Movie Browser</title>
+  <style>
+    body { background:#111; color:#fff; font-family:Arial; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
+    img { width:100%; border-radius:8px; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <h1>🎬 Movie Browser</h1>
+  <div id="movies" class="grid"></div>
+  <div id="player"></div>
+
+  <script>
+    const API_KEY = "a63b70ca6288b339b0b556535449d1b9";
+    const moviesDiv = document.getElementById("movies");
+    const playerDiv = document.getElementById("player");
+
+    async function loadMovies() {
+      const res = await fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}`);
+      const data = await res.json();
+      data.results.forEach(m => {
+        const img = document.createElement("img");
+        img.src = `https://image.tmdb.org/t/p/w300${m.poster_path}`;
+        img.alt = m.title;
+        img.onclick = () => {
+          playerDiv.innerHTML = `
+            <h2>${m.title}</h2>
+            <iframe src="https://vidsrc.cc/v2/embed/movie/${m.id}" width="100%" height="600" frameborder="0" allowfullscreen></iframe>
+          `;
+        };
+        moviesDiv.appendChild(img);
+      });
+    }
+    loadMovies();
+  </script>
+</body>
+</html>
