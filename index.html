@@ -3,40 +3,128 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Movie Browser</title>
+  <title>Movie & TV Browser</title>
   <style>
-    body { background:#111; color:#fff; font-family:Arial; }
-    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
-    img { width:100%; border-radius:8px; cursor:pointer; }
+    body { background:#111; color:#fff; font-family:Arial; margin:0; }
+    header { display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background:#222; }
+    header h1 { margin:0; font-size:20px; }
+    nav button { margin-left:10px; padding:5px 10px; background:#444; color:#fff; border:none; border-radius:4px; cursor:pointer; }
+    nav button.active { background:#e50914; }
+    #searchBar { padding:5px; width:200px; border-radius:4px; border:none; }
+
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; padding:20px; }
+    img { width:100%; border-radius:8px; cursor:pointer; transition:transform 0.2s; }
+    img:hover { transform:scale(1.05); }
+
+    #loadMore { display:block; margin:20px auto; padding:10px 20px; background:#e50914; border:none; border-radius:5px; cursor:pointer; color:white; font-weight:bold; }
+
+    /* Overlay player */
+    #overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); display:none; justify-content:center; align-items:center; flex-direction:column; z-index:1000; }
+    #overlay iframe { width:90%; height:80%; border:none; border-radius:10px; }
+    #closeBtn { position:absolute; top:20px; right:20px; background:#e50914; color:#fff; border:none; border-radius:50%; width:35px; height:35px; font-size:18px; cursor:pointer; }
   </style>
 </head>
 <body>
-  <h1>🎬 Movie Browser</h1>
-  <div id="movies" class="grid"></div>
-  <div id="player"></div>
+  <header>
+    <h1>🎬 Movie & TV Browser</h1>
+    <div>
+      <input id="searchBar" type="text" placeholder="Search...">
+      <nav>
+        <button id="moviesTab" class="active">Movies</button>
+        <button id="tvTab">TV Shows</button>
+      </nav>
+    </div>
+  </header>
+
+  <div id="content" class="grid"></div>
+  <button id="loadMore">Load More</button>
+
+  <!-- Overlay Player -->
+  <div id="overlay">
+    <button id="closeBtn">✖</button>
+    <iframe id="player" allowfullscreen></iframe>
+  </div>
 
   <script>
     const API_KEY = "a63b70ca6288b339b0b556535449d1b9";
-    const moviesDiv = document.getElementById("movies");
-    const playerDiv = document.getElementById("player");
+    let currentPage = 1;
+    let currentType = "movie"; // "movie" or "tv"
+    let currentQuery = null;
 
-    async function loadMovies() {
-      const res = await fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}`);
+    const contentDiv = document.getElementById("content");
+    const loadMoreBtn = document.getElementById("loadMore");
+    const searchBar = document.getElementById("searchBar");
+
+    const overlay = document.getElementById("overlay");
+    const player = document.getElementById("player");
+    const closeBtn = document.getElementById("closeBtn");
+
+    async function loadItems(reset=false) {
+      let url;
+      if (currentQuery) {
+        url = `https://api.themoviedb.org/3/search/${currentType}?api_key=${API_KEY}&query=${encodeURIComponent(currentQuery)}&page=${currentPage}`;
+      } else {
+        url = `https://api.themoviedb.org/3/${currentType}/popular?api_key=${API_KEY}&page=${currentPage}`;
+      }
+
+      const res = await fetch(url);
       const data = await res.json();
-      data.results.forEach(m => {
+
+      if (reset) contentDiv.innerHTML = "";
+      data.results.forEach(item => {
         const img = document.createElement("img");
-        img.src = `https://image.tmdb.org/t/p/w300${m.poster_path}`;
-        img.alt = m.title;
-        img.onclick = () => {
-          playerDiv.innerHTML = `
-            <h2>${m.title}</h2>
-            <iframe src="https://vidsrc.cc/v2/embed/movie/${m.id}" width="100%" height="600" frameborder="0" allowfullscreen></iframe>
-          `;
-        };
-        moviesDiv.appendChild(img);
+        img.src = `https://image.tmdb.org/t/p/w300${item.poster_path}`;
+        img.alt = currentType === "movie" ? item.title : item.name;
+        img.onclick = () => showOverlay(item.id);
+        contentDiv.appendChild(img);
       });
     }
-    loadMovies();
+
+    function showOverlay(id) {
+      player.src = `https://vidsrc.cc/v2/embed/${currentType}/${id}`;
+      overlay.style.display = "flex";
+    }
+
+    closeBtn.onclick = () => {
+      overlay.style.display = "none";
+      player.src = ""; // stop video
+    };
+
+    // Tabs
+    document.getElementById("moviesTab").onclick = () => {
+      currentType = "movie";
+      currentPage = 1;
+      currentQuery = null;
+      document.getElementById("moviesTab").classList.add("active");
+      document.getElementById("tvTab").classList.remove("active");
+      loadItems(true);
+    };
+    document.getElementById("tvTab").onclick = () => {
+      currentType = "tv";
+      currentPage = 1;
+      currentQuery = null;
+      document.getElementById("tvTab").classList.add("active");
+      document.getElementById("moviesTab").classList.remove("active");
+      loadItems(true);
+    };
+
+    // Search
+    searchBar.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        currentQuery = searchBar.value.trim();
+        currentPage = 1;
+        loadItems(true);
+      }
+    });
+
+    // Load more
+    loadMoreBtn.onclick = () => {
+      currentPage++;
+      loadItems();
+    };
+
+    // Initial load
+    loadItems(true);
   </script>
 </body>
 </html>
