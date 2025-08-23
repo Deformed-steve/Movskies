@@ -5,59 +5,99 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Movie & TV Browser</title>
 <style>
-  body { background:#111; color:#fff; font-family:Arial; margin:0; }
-  header { display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background:#222; flex-wrap:wrap; }
-  header h1 { margin:0; font-size:20px; }
-  nav, .categories { display:flex; align-items:center; margin-top:5px; flex-wrap:wrap; }
-  nav button, .categories button { margin:5px 5px 0 0; padding:5px 10px; background:#444; color:#fff; border:none; border-radius:4px; cursor:pointer; }
-  nav button.active, .categories button.active { background:#e50914; }
-  #searchBar { padding:5px; width:200px; border-radius:4px; border:none; }
-
-  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; padding:20px; }
-  img { width:100%; border-radius:8px; cursor:pointer; transition:transform 0.2s; }
-  img:hover { transform:scale(1.05); }
-
-  /* Overlay player */
-  #overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); display:none; justify-content:center; align-items:center; flex-direction:column; z-index:1000; }
-  #overlay iframe { width:90%; height:80%; border:none; border-radius:10px; }
-  #closeBtn { position:absolute; top:20px; right:20px; background:#e50914; color:#fff; border:none; border-radius:50%; width:35px; height:35px; font-size:18px; cursor:pointer; }
+body { background:#111; color:#fff; font-family:Arial; margin:0; }
+header { display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background:#222; flex-wrap:wrap; position:sticky; top:0; z-index:10; }
+header h1 { margin:0; font-size:20px; }
+nav, .categories { display:flex; align-items:center; margin-top:5px; flex-wrap:wrap; }
+nav button, .categories button, #settingsBtn { margin:5px 5px 0 0; padding:5px 10px; background:#444; color:#fff; border:none; border-radius:4px; cursor:pointer; }
+nav button.active, .categories button.active { background:#e50914; }
+#searchBar { padding:5px; width:200px; border-radius:4px; border:none; }
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; padding:10px; }
+img { width:100%; border-radius:8px; cursor:pointer; transition:transform 0.2s; }
+img:hover { transform:scale(1.05); }
+#loadMore { display:block; margin:20px auto; padding:10px 20px; background:#e50914; border:none; border-radius:5px; cursor:pointer; color:white; font-weight:bold; }
+/* Overlay player */
+#overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); display:none; justify-content:center; align-items:center; flex-direction:column; z-index:1000; }
+#overlay iframe { width:95%; height:90%; border:none; border-radius:10px; pointer-events:auto; }
+#closeBtn { position:absolute; top:20px; right:20px; background:#e50914; color:#fff; border:none; border-radius:50%; width:35px; height:35px; font-size:18px; cursor:pointer; }
+/* Settings overlay */
+#settingsOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); color:white; z-index:1001; justify-content:center; align-items:center; flex-direction:column; padding:20px; }
+#settingsOverlay h2 { margin-bottom:20px; }
+#settingsOverlay label { display:block; margin:10px 0; }
+#closeSettings { position:absolute; top:20px; right:20px; background:#e50914; color:#fff; border:none; border-radius:50%; width:35px; height:35px; font-size:18px; cursor:pointer; }
 </style>
 </head>
 <body>
 <header>
-  <h1>🎬 Movie & TV Browser</h1>
-  <input id="searchBar" type="text" placeholder="Search...">
-  <nav>
-    <button id="moviesTab" class="active">Movies</button>
-    <button id="tvTab">TV Shows</button>
-  </nav>
-  <div class="categories" id="categoriesDiv"></div>
+<h1>🎬 Movie & TV Browser</h1>
+<input id="searchBar" type="text" placeholder="Search...">
+<nav>
+<button id="moviesTab" class="active">Movies</button>
+<button id="tvTab">TV Shows</button>
+</nav>
+<button id="settingsBtn">⚙ Settings</button>
+<div class="categories" id="categoriesDiv"></div>
 </header>
 
 <div id="content" class="grid"></div>
+<button id="loadMore">Load More</button>
 
 <!-- Overlay Player -->
 <div id="overlay">
-  <button id="closeBtn">✖</button>
-  <iframe id="player" allowfullscreen></iframe>
+<button id="closeBtn">✖</button>
+<iframe id="player" allowfullscreen sandbox="allow-scripts allow-same-origin"></iframe>
+</div>
+
+<!-- Settings Overlay -->
+<div id="settingsOverlay">
+<button id="closeSettings">✖</button>
+<h2>Settings</h2>
+<label><input type="checkbox" id="toggleAdult"> Show Adult Content</label>
+<label><input type="checkbox" id="toggleTrending"> Show Trending / Popular on Home</label>
+<label>Language: 
+  <select id="languageSelect">
+    <option value="en-US">English</option>
+    <option value="es-ES">Spanish</option>
+    <option value="fr-FR">French</option>
+  </select>
+</label>
+<label>Region: 
+  <select id="regionSelect">
+    <option value="US">US</option>
+    <option value="GB">UK</option>
+    <option value="CA">Canada</option>
+  </select>
+</label>
 </div>
 
 <script>
 const API_KEY = "a63b70ca6288b339b0b556535449d1b9";
 let currentPage = 1;
-let currentType = "movie"; // "movie" or "tv"
+let currentType = "movie";
 let currentCategory = "popular";
 let currentQuery = null;
-let isLoading = false;
+let includeAdult = false;
+let showTrending = false;
+const BATCH_SIZE = 33;
 
 const contentDiv = document.getElementById("content");
+const loadMoreBtn = document.getElementById("loadMore");
 const searchBar = document.getElementById("searchBar");
 const overlay = document.getElementById("overlay");
 const player = document.getElementById("player");
 const closeBtn = document.getElementById("closeBtn");
 const categoriesDiv = document.getElementById("categoriesDiv");
 
-// Category options
+// Settings
+const settingsBtn = document.getElementById("settingsBtn");
+const settingsOverlay = document.getElementById("settingsOverlay");
+const closeSettings = document.getElementById("closeSettings");
+const toggleAdult = document.getElementById("toggleAdult");
+const toggleTrending = document.getElementById("toggleTrending");
+const languageSelect = document.getElementById("languageSelect");
+const regionSelect = document.getElementById("regionSelect");
+
+// TMDb categories
 const categories = {
   movie: [
     { label: "Trending", value: "popular" },
@@ -72,45 +112,55 @@ const categories = {
   ]
 };
 
-// Load items from TMDb
-async function loadItems(reset=false) {
-  if(isLoading) return;
-  isLoading = true;
+// Initialize settings
+toggleAdult.checked = includeAdult;
+toggleTrending.checked = showTrending;
 
-  let url;
-  if(currentQuery) {
-    url = `https://api.themoviedb.org/3/search/${currentType}?api_key=${API_KEY}&query=${encodeURIComponent(currentQuery)}&page=${currentPage}`;
-  } else {
-    url = `https://api.themoviedb.org/3/${currentType}/${currentCategory}?api_key=${API_KEY}&page=${currentPage}`;
-  }
+// Load items
+async function loadItems(reset=false){
+    if(reset) contentDiv.innerHTML = "";
+    if(!showTrending && !currentQuery) return; // don't load any items if trending disabled and no search
+    let url;
+    const adultParam = includeAdult ? 'true' : 'false';
+    const langParam = languageSelect.value;
+    const regionParam = regionSelect.value;
 
-  const res = await fetch(url);
-  const data = await res.json();
+    if(currentQuery){
+        url = `https://api.themoviedb.org/3/search/${currentType}?api_key=${API_KEY}&query=${encodeURIComponent(currentQuery)}&page=${currentPage}&include_adult=${adultParam}&language=${langParam}&region=${regionParam}`;
+    } else {
+        url = `https://api.themoviedb.org/3/${currentType}/${currentCategory}?api_key=${API_KEY}&page=${currentPage}&include_adult=${adultParam}&language=${langParam}&region=${regionParam}`;
+    }
 
-  if(reset) contentDiv.innerHTML = "";
-  data.results.forEach(item => {
-    if(!item.poster_path) return;
-    const img = document.createElement("img");
-    img.src = `https://image.tmdb.org/t/p/w300${item.poster_path}`;
-    img.alt = currentType==="movie"?item.title:item.name;
-    img.onclick = () => showOverlay(item.id);
-    contentDiv.appendChild(img);
-  });
+    try{
+        const res = await fetch(url);
+        const data = await res.json();
+        if(!data.results) return;
 
-  isLoading = false;
+        let count = 0;
+        for(let item of data.results){
+            if(!item.poster_path) continue;
+            if(item.adult===true && !includeAdult) continue;
+            const img = document.createElement("img");
+            img.src = `https://image.tmdb.org/t/p/w300${item.poster_path}`;
+            img.alt = currentType==="movie"?item.title:item.name;
+            img.onclick = () => showOverlay(item.id);
+            contentDiv.appendChild(img);
+            count++;
+            if(count>=BATCH_SIZE) break;
+        }
+    } catch(e){ console.error(e); }
 }
 
-// Show player overlay
+// Overlay player
 function showOverlay(id){
   player.src = `https://vidsrc.cc/v2/embed/${currentType}/${id}`;
-  overlay.style.display = "flex";
+  overlay.style.display="flex";
 }
 closeBtn.onclick = () => { overlay.style.display="none"; player.src=""; };
 
-// Set up tabs
+// Tabs
 document.getElementById("moviesTab").onclick = () => switchType("movie");
 document.getElementById("tvTab").onclick = () => switchType("tv");
-
 function switchType(type){
   currentType = type;
   currentPage = 1;
@@ -120,13 +170,12 @@ function switchType(type){
   renderCategories();
   loadItems(true);
 }
-
 function updateTabs(){
   document.getElementById("moviesTab").classList.toggle("active", currentType==="movie");
   document.getElementById("tvTab").classList.toggle("active", currentType==="tv");
 }
 
-// Render category buttons
+// Categories
 function renderCategories(){
   categoriesDiv.innerHTML = "";
   categories[currentType].forEach(cat=>{
@@ -147,25 +196,31 @@ function renderCategories(){
 }
 
 // Search
-searchBar.addEventListener("keypress", (e)=>{
+searchBar.addEventListener("keypress", e=>{
   if(e.key==="Enter"){
     currentQuery = searchBar.value.trim();
-    currentPage=1;
+    currentPage = 1;
     loadItems(true);
   }
 });
 
-// Infinite scroll
-window.addEventListener("scroll", ()=>{
-  if(window.innerHeight + window.scrollY >= document.body.offsetHeight - 500 && !isLoading){
-    currentPage++;
-    loadItems();
-  }
-});
+// Load More
+loadMoreBtn.onclick = ()=>{
+  currentPage++;
+  loadItems();
+};
 
-// Initial setup
+// Settings overlay
+settingsBtn.onclick = () => settingsOverlay.style.display="flex";
+closeSettings.onclick = () => settingsOverlay.style.display="none";
+toggleAdult.onchange = () => { includeAdult = toggleAdult.checked; currentPage=1; loadItems(true); };
+toggleTrending.onchange = () => { showTrending = toggleTrending.checked; currentPage=1; loadItems(true); };
+languageSelect.onchange = () => { currentPage=1; loadItems(true); };
+regionSelect.onchange = () => { currentPage=1; loadItems(true); };
+
+// Initial
 renderCategories();
-loadItems(true);
+loadItems(); // will only load if showTrending is true
 </script>
 </body>
 </html>
