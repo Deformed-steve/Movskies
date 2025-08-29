@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Movie & TV Browser</title>
 <style>
-body { background:#111; color:#fff; font-family:Arial; margin:0; }
+body { background:#111; color:#fff; font-family:Arial, sans-serif; margin:0; }
 header { display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background:#222; flex-wrap:wrap; position:sticky; top:0; z-index:10; }
 header h1 { margin:0; font-size:20px; }
 nav, .categories { display:flex; align-items:center; margin-top:5px; flex-wrap:wrap; }
@@ -17,7 +17,7 @@ img { width:100%; border-radius:8px; cursor:pointer; transition:transform 0.2s; 
 img:hover { transform:scale(1.05); }
 /* Overlay player */
 #overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); display:none; justify-content:center; align-items:center; flex-direction:column; z-index:1000; }
-#overlay iframe { width:95%; height:90%; border:none; border-radius:10px; pointer-events:auto; }
+#overlay iframe { width:95%; height:90%; border:none; border-radius:10px; pointer-events:auto; background:#000; }
 #closeBtn { position:absolute; top:20px; right:20px; background:#e50914; color:#fff; border:none; border-radius:50%; width:35px; height:35px; font-size:18px; cursor:pointer; }
 </style>
 </head>
@@ -37,7 +37,7 @@ img:hover { transform:scale(1.05); }
 <!-- Overlay Player -->
 <div id="overlay">
 <button id="closeBtn">✖</button>
-<iframe id="player" allowfullscreen sandbox="allow-scripts allow-same-origin"></iframe>
+<div id="playerContainer" style="width:95%;height:90%;"></div>
 </div>
 
 <script>
@@ -51,7 +51,7 @@ const BATCH_SIZE = 33;
 const contentDiv = document.getElementById("content");
 const searchBar = document.getElementById("searchBar");
 const overlay = document.getElementById("overlay");
-const player = document.getElementById("player");
+const playerContainer = document.getElementById("playerContainer");
 const closeBtn = document.getElementById("closeBtn");
 const categoriesDiv = document.getElementById("categoriesDiv");
 
@@ -70,10 +70,10 @@ const categories = {
   ]
 };
 
-// Load items (only if there's a search query)
+// Load items
 async function loadItems(reset=false){
     if(reset) contentDiv.innerHTML = "";
-    if(!currentQuery) return; // do nothing if no search
+    if(!currentQuery) return;
     let url = `https://api.themoviedb.org/3/search/${currentType}?api_key=${API_KEY}&query=${encodeURIComponent(currentQuery)}&page=${currentPage}&include_adult=false`;
     
     try{
@@ -87,7 +87,13 @@ async function loadItems(reset=false){
             const img = document.createElement("img");
             img.src = `https://image.tmdb.org/t/p/w300${item.poster_path}`;
             img.alt = currentType==="movie"?item.title:item.name;
-            img.onclick = () => showOverlay(item.id);
+            img.onclick = () => {
+              if(currentType==="tv"){
+                showOverlay(item.id,1,1);
+              } else {
+                showOverlay(item.id);
+              }
+            };
             contentDiv.appendChild(img);
             count++;
             if(count>=BATCH_SIZE) break;
@@ -95,12 +101,69 @@ async function loadItems(reset=false){
     } catch(e){ console.error(e); }
 }
 
-// Overlay player
-function showOverlay(id){
-  player.src = `https://vidsrc.cc/v2/embed/${currentType}/${id}`;
+// Overlay player with provider choice
+function showOverlay(id, season=null, episode=null){
   overlay.style.display="flex";
+  playerContainer.innerHTML = "";
+
+  const info = document.createElement("div");
+  info.id = "gettingProviders";
+  info.style.cssText = "color:#fff;font-size:20px;margin-bottom:20px;";
+  info.textContent = "Select a provider:";
+  playerContainer.appendChild(info);
+
+  const list = document.createElement("div");
+  list.style.display = "flex";
+  list.style.gap = "10px";
+  list.style.marginBottom = "20px";
+  playerContainer.appendChild(list);
+
+  const frameArea = document.createElement("div");
+  frameArea.style.width = "100%";
+  frameArea.style.height = "100%";
+  playerContainer.appendChild(frameArea);
+
+  const providers = [
+    {name:"VidPlus", url: currentType==="movie" ? 
+      `https://player.vidplus.to/embed/movie/${id}?autoplay=true&autonext=false&nextbutton=true&poster=false&title=true&watchparty=false&chromecast=false&servericon=false&icons=netflix&primarycolor=6C63FF&secondarycolor=9F9BFF&iconcolor=FFFFFF` : 
+      `https://player.vidplus.to/embed/tv/${id}/${season}/${episode}?autoplay=true&autonext=true&nextbutton=true&poster=true&title=true&watchparty=false&chromecast=true&episodelist=true&servericon=true&primarycolor=6C63FF&secondarycolor=9F9BFF&iconcolor=FFFFFF`,
+      sandbox:false},
+    {name:"Vidsrc", url: `https://vidsrc.cc/v2/embed/${currentType}/${id}`, sandbox:true}
+  ];
+
+  providers.forEach(p=>{
+    const btn = document.createElement("button");
+    btn.textContent = p.name;
+    btn.style.padding = "5px 10px";
+    btn.style.background="#e50914";
+    btn.style.color="#fff";
+    btn.style.border="none";
+    btn.style.borderRadius="4px";
+    btn.style.cursor="pointer";
+
+    btn.onclick = ()=>{
+      frameArea.innerHTML = "";
+      const iframe = document.createElement("iframe");
+      iframe.src = p.url;
+      iframe.className = "w-full h-full border-0 m-0 p-0 block";
+      iframe.style.cssText = "margin:0;padding:0;display:block;width:100%;height:100%;border:none;border-radius:10px;";
+      iframe.allowFullscreen = true;
+      iframe.setAttribute("allow","autoplay; encrypted-media");
+
+      if(p.sandbox){
+        iframe.setAttribute("sandbox","allow-scripts allow-same-origin allow-presentation");
+      }
+
+      frameArea.appendChild(iframe);
+    };
+    list.appendChild(btn);
+  });
 }
-closeBtn.onclick = () => { overlay.style.display="none"; player.src=""; };
+
+closeBtn.onclick = () => {
+  overlay.style.display="none"; 
+  playerContainer.innerHTML=""; 
+};
 
 // Tabs
 document.getElementById("moviesTab").onclick = () => switchType("movie");
@@ -112,7 +175,7 @@ function switchType(type){
   currentCategory = categories[type][0].value;
   updateTabs();
   renderCategories();
-  contentDiv.innerHTML = ""; // clear content when switching
+  contentDiv.innerHTML = "";
 }
 function updateTabs(){
   document.getElementById("moviesTab").classList.toggle("active", currentType==="movie");
@@ -133,7 +196,7 @@ function renderCategories(){
       currentQuery = null;
       document.querySelectorAll("#categoriesDiv button").forEach(b=>b.classList.remove("active"));
       btn.classList.add("active");
-      contentDiv.innerHTML = ""; // clear content on category switch
+      contentDiv.innerHTML = "";
     };
     categoriesDiv.appendChild(btn);
   });
