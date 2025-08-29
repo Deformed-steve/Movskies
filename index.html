@@ -18,21 +18,7 @@ img:hover { transform:scale(1.05); }
 /* Overlay player */
 #overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); display:none; justify-content:center; align-items:center; flex-direction:column; z-index:1000; }
 #overlay iframe { width:100vw; height:100vh; border:none; border-radius:0; background:#000; }
-#closeBtn { 
-  position:absolute; 
-  top:15px; 
-  right:15px; 
-  background:#e50914; 
-  color:#fff; 
-  border:none; 
-  border-radius:50%; 
-  width:28px; 
-  height:28px; 
-  font-size:16px; 
-  cursor:pointer; 
-  opacity:0.5; 
-  transition:opacity 0.2s;
-}
+#closeBtn { position:absolute; top:15px; right:15px; background:#e50914; color:#fff; border:none; border-radius:50%; width:28px; height:28px; font-size:16px; cursor:pointer; opacity:0.5; transition:opacity 0.2s; }
 #closeBtn:hover { opacity:0.9; }
 </style>
 </head>
@@ -87,33 +73,33 @@ const categories = {
 
 // Load items
 async function loadItems(reset=false){
-    if(reset) contentDiv.innerHTML = "";
-    if(!currentQuery) return;
-    let url = `https://api.themoviedb.org/3/search/${currentType}?api_key=${API_KEY}&query=${encodeURIComponent(currentQuery)}&page=${currentPage}&include_adult=false`;
-    
-    try{
-        const res = await fetch(url);
-        const data = await res.json();
-        if(!data.results) return;
+  if(reset) contentDiv.innerHTML = "";
+  if(!currentQuery) return;
+  let url = `https://api.themoviedb.org/3/search/${currentType}?api_key=${API_KEY}&query=${encodeURIComponent(currentQuery)}&page=${currentPage}&include_adult=false`;
+  
+  try{
+    const res = await fetch(url);
+    const data = await res.json();
+    if(!data.results) return;
 
-        let count = 0;
-        for(let item of data.results){
-            if(!item.poster_path) continue;
-            const img = document.createElement("img");
-            img.src = `https://image.tmdb.org/t/p/w300${item.poster_path}`;
-            img.alt = currentType==="movie"?item.title:item.name;
-            img.onclick = () => {
-              if(currentType==="tv"){
-                showOverlay(item.id,1,1);
-              } else {
-                showOverlay(item.id);
-              }
-            };
-            contentDiv.appendChild(img);
-            count++;
-            if(count>=BATCH_SIZE) break;
+    let count = 0;
+    for(let item of data.results){
+      if(!item.poster_path) continue;
+      const img = document.createElement("img");
+      img.src = `https://image.tmdb.org/t/p/w300${item.poster_path}`;
+      img.alt = currentType==="movie"?item.title:item.name;
+      img.onclick = () => {
+        if(currentType==="tv"){
+          showOverlay(item.id,1,1);
+        } else {
+          showOverlay(item.id);
         }
-    } catch(e){ console.error(e); }
+      };
+      contentDiv.appendChild(img);
+      count++;
+      if(count>=BATCH_SIZE) break;
+    }
+  } catch(e){ console.error(e); }
 }
 
 // Overlay player with fullscreen iframe
@@ -147,8 +133,15 @@ function showOverlay(id, season=null, episode=null){
       sandbox:false
     },
     {
-      name:"Vidsrc",
+      name:"Vidsrc v1",
       url: `https://vidsrc.cc/v2/embed/${currentType}/${id}`,
+      sandbox:true
+    },
+    {
+      name:"Vidsrc v2",
+      url: currentType==="movie"
+        ? `https://vidsrc.to/embed/movie/${id}`
+        : `https://vidsrc.to/embed/tv/${id}`,
       sandbox:true
     }
   ];
