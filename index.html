@@ -143,8 +143,16 @@ function showOverlay(id, season=null, episode=null){
         ? `https://vidsrc.to/embed/movie/${id}`
         : `https://vidsrc.to/embed/tv/${id}`,
       sandbox:true
+    },
+    {
+      name:"VidNest",
+      url: currentType==="movie"
+        ? `https://vidnest.fun/movie/${id}`
+        : `https://vidnest.fun/tv/${id}/${season}/${episode}`,
+      sandbox:true
     }
   ];
+
 
   providers.forEach(p=>{
     const btn = document.createElement("button");
