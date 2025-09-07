@@ -29,6 +29,7 @@ img:hover { transform:scale(1.05); }
 <nav>
 <button id="moviesTab" class="active">Movies</button>
 <button id="tvTab">TV Shows</button>
+<button id="primeCatalogBtn">PrimeTv Catalog</button>
 </nav>
 <div class="categories" id="categoriesDiv"></div>
 </header>
@@ -45,7 +46,7 @@ img:hover { transform:scale(1.05); }
 const API_KEY = "a63b70ca6288b339b0b556535449d1b9";
 let currentPage = 1;
 let currentType = "movie";
-let currentCategory = "popular";
+let currentCategory = "now_playing";
 let currentQuery = null;
 const BATCH_SIZE = 33;
 
@@ -56,16 +57,14 @@ const playerContainer = document.getElementById("playerContainer");
 const closeBtn = document.getElementById("closeBtn");
 const categoriesDiv = document.getElementById("categoriesDiv");
 
-// TMDb categories
+// TMDb categories (removed Trending)
 const categories = {
   movie: [
-    { label: "Trending", value: "popular" },
     { label: "In Theaters", value: "now_playing" },
     { label: "Top Rated", value: "top_rated" },
     { label: "Upcoming", value: "upcoming" }
   ],
   tv: [
-    { label: "Trending", value: "popular" },
     { label: "Newest", value: "on_the_air" },
     { label: "Top Rated", value: "top_rated" }
   ]
@@ -150,9 +149,22 @@ function showOverlay(id, season=null, episode=null){
         ? `https://vidnest.fun/movie/${id}`
         : `https://vidnest.fun/tv/${id}/${season}/${episode}`,
       sandbox:true
+    },
+    {
+      name:"FMovies",
+      url: currentType==="movie"
+        ? `https://www.fmovies.gd/watch/movie/${id}`
+        : `https://www.fmovies.gd/watch/tv/${id}/${season}/${episode}`,
+      sandbox:true
+    },
+    {
+      name:"PrimeTv",
+      url: currentType==="movie"
+        ? `https://xprime.tv/watch/${id}`
+        : `https://xprime.tv/watch/${id}/${season}/${episode}`,
+      sandbox:true
     }
   ];
-
 
   providers.forEach(p=>{
     const btn = document.createElement("button");
@@ -165,11 +177,8 @@ function showOverlay(id, season=null, episode=null){
     btn.style.cursor="pointer";
 
     btn.onclick = ()=>{
-      // Hide provider UI
       info.style.display = "none";
       list.style.display = "none";
-
-      // Clear and make iframe fullscreen
       frameArea.innerHTML = "";
       const iframe = document.createElement("iframe");
       iframe.src = p.url;
@@ -177,16 +186,13 @@ function showOverlay(id, season=null, episode=null){
         margin:0;padding:0;display:block;
         width:100vw;height:100vh;
         border:none;
-        border-radius:0;
         background:#000;
       `;
       iframe.allowFullscreen = true;
       iframe.setAttribute("allow","autoplay; encrypted-media");
-
       if(p.sandbox){
-        iframe.setAttribute("sandbox","allow-scripts allow-same-origin allow-presentation");
+        iframe.setAttribute("sandbox","allow-scripts allow-same-origin allow-presentation allow-forms");
       }
-
       frameArea.appendChild(iframe);
     };
     list.appendChild(btn);
@@ -223,7 +229,7 @@ function renderCategories(){
     btn.textContent = cat.label;
     btn.dataset.category = cat.value;
     if(cat.value===currentCategory) btn.classList.add("active");
-    btn.onclick = () => {
+    btn.onclick = ()=>{
       currentCategory = cat.value;
       currentPage = 1;
       currentQuery = null;
@@ -243,6 +249,23 @@ searchBar.addEventListener("keypress", e=>{
     loadItems(true);
   }
 });
+
+// PrimeTv Catalog button logic
+document.getElementById("primeCatalogBtn").onclick = () => {
+  overlay.style.display = "flex";
+  playerContainer.innerHTML = "";
+  const iframe = document.createElement("iframe");
+  iframe.src = "https://xprime.tv/";
+  iframe.style.cssText = `
+    margin:0;padding:0;display:block;
+    width:100vw;height:100vh;
+    border:none;
+    background:#000;
+  `;
+  iframe.setAttribute("sandbox","allow-scripts allow-same-origin allow-presentation allow-forms");
+  iframe.allowFullscreen = true;
+  playerContainer.appendChild(iframe);
+};
 
 // Initial
 renderCategories();
