@@ -180,6 +180,13 @@
           sandbox:true
         },
         {
+         name:"AllEmbed",
+         url: currentType==="movie"
+         ? `https://nhdapi.com/movie/player?id=${id}`
+         : `https://nhdapi.com/tv/player?id=${id}&season=${season}&ep=${episode}`,
+        sandbox:true
+        },
+        {
           name:"Flixer",
           url: currentType==="movie"
             ? `https://flixer.su/watch/movie/${id}`
