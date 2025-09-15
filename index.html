@@ -1,106 +1,330 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Media Hub — Movies · TV · Music</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Movie & TV Browser</title>
   <style>
-    :root{
-      --bg:#0b0b0d; --card:#0f1720; --accent:#e50914; --muted:#9aa6b2;
-      --glass: rgba(255,255,255,0.03);
-      --radius:14px;
-      --transition:200ms cubic-bezier(.2,.8,.2,1);
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%; margin:0; font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial; background:linear-gradient(180deg,#050507 0%, #0b0b0d 60%); color:#e6eef6; -webkit-font-smoothing:antialiased;}
-    header{position:sticky; top:0; z-index:60; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 20px; background:linear-gradient(180deg, rgba(9,11,14,0.55), rgba(9,11,14,0.15)); backdrop-filter: blur(6px); border-bottom:1px solid rgba(255,255,255,0.02);}
-    .brand {display:flex; align-items:center; gap:12px;}
-    .logo {width:42px; height:42px; border-radius:10px; background:linear-gradient(135deg,#e50914,#ff6d6d); display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; box-shadow:0 6px 18px rgba(0,0,0,0.5); }
-    h1 {font-size:16px; margin:0; letter-spacing:0.2px;}
-    .top-tabs {display:flex; gap:8px; align-items:center;}
-    .tab-btn {background:transparent; color:var(--muted); padding:8px 12px; border-radius:10px; border:none; cursor:pointer; font-weight:600; transition:var(--transition);}
-    .tab-btn.active {background:linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); color:var(--accent); box-shadow: 0 6px 20px rgba(229,9,20,0.07), inset 0 -2px 10px rgba(0,0,0,0.2);}
-    main {padding:22px; max-width:1300px; margin:0 auto;}
-    /* Home hero */
-    .hero {display:grid; grid-template-columns: 1fr 360px; gap:18px; align-items:stretch; margin-bottom:20px;}
-    .hero-card {background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:var(--radius); padding:24px; position:relative; overflow:hidden; display:flex; flex-direction:column; justify-content:center; gap:12px;}
-    .hero-title {font-size:22px; margin:0 0 6px 0;}
-    .hero-desc {color:var(--muted); margin:0 0 8px 0;}
-    .hero-actions {display:flex; gap:8px; margin-top:10px;}
-    .cta {padding:10px 14px; border-radius:10px; border:none; cursor:pointer; font-weight:700; transition:var(--transition);}
-    .cta.primary {background:var(--accent); color:#fff;}
-    .cta.ghost {background:rgba(255,255,255,0.02); color:#fff;}
-    .side-card {background:var(--glass); border-radius:var(--radius); padding:12px;}
-    .section {margin-top:20px;}
-    .section h2{margin:0 0 12px 0; font-size:18px;}
-    .row {display:flex; gap:10px; overflow:auto; padding-bottom:6px;}
-    .poster {min-width:120px; width:140px; border-radius:12px; overflow:hidden; background:#111; box-shadow:0 8px 30px rgba(0,0,0,0.6); cursor:pointer; transform-origin:center; transition:transform 220ms;}
-    .poster img{width:100%; height:210px; object-fit:cover; display:block;}
-    .poster:hover{transform:translateY(-6px) scale(1.03);}
-    /* media section */
-    .media-toolbar{display:flex; gap:12px; align-items:center; margin-bottom:12px; flex-wrap:wrap;}
-    .search {flex:1; display:flex; gap:8px; align-items:center; background:var(--card); padding:8px; border-radius:12px; min-width:260px;}
-    .search input {flex:1; border:0; background:transparent; color: #e6eef6; outline:none; padding:6px;}
-    .chip-row {display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
-    .chip {padding:8px 10px; border-radius:999px; background:rgba(255,255,255,0.02); color:var(--muted); cursor:pointer; border:none; transition:var(--transition); font-weight:600;}
-    .chip.active{background:linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); color:var(--accent);}
-    .grid {display:grid; grid-template-columns: repeat(auto-fill,minmax(160px,1fr)); gap:14px; margin-top:10px;}
-    .card {background:linear-gradient(180deg, rgba(255,255,255,0.015), transparent); border-radius:12px; overflow:hidden; padding-bottom:8px; cursor:pointer;}
-    .card img{width:100%; height:230px; object-fit:cover; display:block;}
-    .meta {padding:10px; display:flex; flex-direction:column; gap:6px;}
-    .title {font-weight:700; font-size:14px;}
-    .sub {color:var(--muted); font-size:13px;}
-    .load-more {display:flex; justify-content:center; margin-top:18px;}
-    .btn {padding:10px 16px; border-radius:10px; border:none; background:rgba(255,255,255,0.03); color:#fff; cursor:pointer;}
-    /* overlay modal */
-    #overlay {position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:110; padding:20px;}
-    .modal {width:100%; max-width:1100px; height:90vh; background:linear-gradient(180deg, rgba(3,6,10,0.95), rgba(3,6,10,0.98)); border-radius:14px; overflow:hidden; display:flex; gap:16px; box-shadow:0 30px 80px rgba(2,6,23,0.8);}
-    .modal-left {width:420px; min-width:320px; background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent); padding:18px; display:flex; flex-direction:column; gap:12px;}
-    .modal-left img{width:100%; height:480px; object-fit:cover; border-radius:10px;}
-    .modal-right {flex:1; padding:18px; display:flex; flex-direction:column; gap:12px; overflow:auto;}
-    .close-x{position:absolute; top:18px; right:20px; background:rgba(0,0,0,0.45); border:none; color:#fff; width:36px; height:36px; border-radius:8px; cursor:pointer;}
-    .providers {display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;}
-    .provider-btn{padding:8px 10px; border-radius:10px; border:none; cursor:pointer; background:rgba(255,255,255,0.03); color:#fff; font-weight:700;}
-    .provider-embed {flex:1; background:#000; border-radius:10px; overflow:hidden; display:flex; justify-content:center; align-items:center; min-height:360px;}
-    .small-muted{color:var(--muted); font-size:13px;}
-    /* music fullscreen */
-    #musicWrapper {display:none; position:fixed; inset:0; z-index:90; background:#000; }
-    #musicIframe{width:100%; height:100%; border:0;}
-    .music-close {position:fixed; top:18px; right:18px; z-index:200; background:var(--accent); color:#fff; border:none; width:46px; height:46px; border-radius:10px; font-weight:700; cursor:pointer;}
-    /* responsive */
-    @media (max-width:980px){
-      .hero{grid-template-columns:1fr; gap:12px;}
-      .hero-card{order:2}
-      .side-card{order:1}
-      .modal-left{width:100%; min-width:unset}
-      .modal{flex-direction:column; height:92vh;}
-    }
+    body { background:#111; color:#fff; font-family:Arial, sans-serif; margin:0; }
+    header { display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background:#222; flex-wrap:wrap; position:sticky; top:0; z-index:10; }
+    header h1 { margin:0; font-size:20px; }
+    nav, .categories { display:flex; align-items:center; margin-top:5px; flex-wrap:wrap; }
+    nav button, .categories button { margin:5px 5px 0 0; padding:5px 10px; background:#444; color:#fff; border:none; border-radius:4px; cursor:pointer; }
+    nav button.active, .categories button.active { background:#e50914; }
+    #searchBar { padding:5px; width:200px; border-radius:4px; border:none; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; padding:10px; }
+    img { width:100%; border-radius:8px; cursor:pointer; transition:transform 0.2s; }
+    img:hover { transform:scale(1.05); }
+    /* Overlay player */
+    #overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); display:none; justify-content:center; align-items:center; flex-direction:column; z-index:1000; }
+    #overlay iframe { width:100vw; height:100vh; border:none; border-radius:0; background:#000; }
+    #closeBtn { position:absolute; top:15px; right:15px; background:#e50914; color:#fff; border:none; border-radius:50%; width:28px; height:28px; font-size:16px; cursor:pointer; opacity:0.5; transition:opacity 0.2s; }
+    #closeBtn:hover { opacity:0.9; }
   </style>
 </head>
 <body>
   <header>
-    <div class="brand">
-      <div class="logo">MH</div>
-      <div>
-        <h1>Media Hub</h1>
-        <div class="small-muted" style="font-size:12px">Movies · TV · Music — beautiful browser</div>
-      </div>
-    </div>
-
-    <div class="top-tabs" role="navigation" aria-label="Main tabs">
-      <button class="tab-btn" id="homeTab">Home</button>
-      <button class="tab-btn active" id="moviesTab">Movies</button>
-      <button class="tab-btn" id="tvTab">TV</button>
-      <button class="tab-btn" id="musicTab">Music</button>
-    </div>
+    <h1>🎬 Movie & TV Browser</h1>
+    <input id="searchBar" type="text" placeholder="Search...">
+    <nav>
+      <button id="moviesTab" class="active">Movies</button>
+      <button id="tvTab">TV Shows</button>
+      <button id="primeCatalogBtn">PrimeTv Catalog</button>
+      <button id="movies345CatalogBtn">345Movies Catalog</button>
+    </nav>
+    <div class="categories" id="categoriesDiv"></div>
   </header>
 
-  <main id="main">
-    <!-- HOME -->
-    <section id="homeSection" class="home">
-      <div class="hero">
-        <div class="hero-card">
-          <h2 class="hero-title" id="heroTitle">Welcome to Media Hub</h2>
+  <div id="content" class="grid"></div>
+
+  <!-- Overlay Player -->
+  <div id="overlay">
+    <button id="closeBtn">✖</button>
+    <div id="playerContainer" style="width:100%;height:100%;"></div>
+  </div>
+
+  <script>
+    const API_KEY = "a63b70ca6288b339b0b556535449d1b9";
+    let currentPage = 1;
+    let currentType = "movie";
+    let currentCategory = "now_playing";
+    let currentQuery = null;
+    const BATCH_SIZE = 33;
+
+    const contentDiv = document.getElementById("content");
+    const searchBar = document.getElementById("searchBar");
+    const overlay = document.getElementById("overlay");
+    const playerContainer = document.getElementById("playerContainer");
+    const closeBtn = document.getElementById("closeBtn");
+    const categoriesDiv = document.getElementById("categoriesDiv");
+
+    // TMDb categories
+    const categories = {
+      movie: [
+        { label: "In Theaters", value: "now_playing" },
+        { label: "Top Rated", value: "top_rated" },
+        { label: "Upcoming", value: "upcoming" }
+      ],
+      tv: [
+        { label: "Newest", value: "on_the_air" },
+        { label: "Top Rated", value: "top_rated" }
+      ]
+    };
+
+    // Load items
+    async function loadItems(reset=false){
+      if(reset) contentDiv.innerHTML = "";
+      if(!currentQuery) return;
+      let url = `https://api.themoviedb.org/3/search/${currentType}?api_key=${API_KEY}&query=${encodeURIComponent(currentQuery)}&page=${currentPage}&include_adult=false`;
+
+      try{
+        const res = await fetch(url);
+        const data = await res.json();
+        if(!data.results) return;
+
+        let count = 0;
+        for(let item of data.results){
+          if(!item.poster_path) continue;
+          const img = document.createElement("img");
+          img.src = `https://image.tmdb.org/t/p/w300${item.poster_path}`;
+          img.alt = currentType==="movie"?item.title:item.name;
+          img.onclick = () => {
+            if(currentType==="tv"){
+              showOverlay(item.id,1,1);
+            } else {
+              showOverlay(item.id);
+            }
+          };
+          contentDiv.appendChild(img);
+          count++;
+          if(count>=BATCH_SIZE) break;
+        }
+      } catch(e){ console.error(e); }
+    }
+
+    // Overlay player
+    function showOverlay(id, season=null, episode=null){
+      overlay.style.display="flex";
+      playerContainer.innerHTML = "";
+
+      const info = document.createElement("div");
+      info.id = "gettingProviders";
+      info.style.cssText = "color:#fff;font-size:20px;margin-bottom:20px;";
+      info.textContent = "Select a provider:";
+      playerContainer.appendChild(info);
+
+      const list = document.createElement("div");
+      list.style.display = "flex";
+      list.style.gap = "10px";
+      list.style.marginBottom = "20px";
+      playerContainer.appendChild(list);
+
+      const frameArea = document.createElement("div");
+      frameArea.id = "frameArea";
+      frameArea.style.cssText = "width:100%;height:100%;display:flex;justify-content:center;align-items:center;";
+      playerContainer.appendChild(frameArea);
+
+      const providers = [
+        {
+          name:"VidPlus",
+          url: currentType==="movie"
+            ? `https://player.vidplus.to/embed/movie/${id}?autoplay=true`
+            : `https://player.vidplus.to/embed/tv/${id}/${season}/${episode}?autoplay=true`,
+          sandbox:false
+        },
+        {
+          name:"Vidsrc v1",
+          url: `https://vidsrc.cc/v2/embed/${currentType}/${id}`,
+          sandbox:true
+        },
+        {
+          name:"Vidsrc v2",
+          url: currentType==="movie"
+            ? `https://vidsrc.to/embed/movie/${id}`
+            : `https://vidsrc.to/embed/tv/${id}`,
+          sandbox:true
+        },
+        {
+          name:"VidNest",
+          url: currentType==="movie"
+            ? `https://vidnest.fun/movie/${id}`
+            : `https://vidnest.fun/tv/${id}/${season}/${episode}`,
+          sandbox:true
+        },
+        {
+          name:"FMovies",
+          url: currentType==="movie"
+            ? `https://www.fmovies.gd/watch/movie/${id}`
+            : `https://www.fmovies.gd/watch/tv/${id}/${season}/${episode}`,
+          sandbox:true
+        },
+        {
+          name:"PrimeTv",
+          url: currentType==="movie"
+            ? `https://xprime.tv/watch/${id}`
+            : `https://xprime.tv/watch/${id}/${season}/${episode}`,
+          sandbox:true
+        },
+        {
+          name:"345Movies",
+          url: currentType==="movie"
+            ? `https://345movie.net/movies`
+            : `https://345movie.net/movies`,
+          sandbox:true
+        },
+        {
+          name:"SpenEmbed",
+          url: currentType==="movie"
+            ? `https://spencerdevs.xyz/movie/${id}`
+            : `https://spencerdevs.xyz/tv/${id}/${season}/${episode}`,
+          sandbox:true
+        },
+        {
+         name:"AllEmbed",
+         url: currentType==="movie"
+         ? `https://nhdapi.com/movie/player?id=${id}`
+         : `https://nhdapi.com/tv/player?id=${id}&season=${season}&ep=${episode}`,
+        sandbox:true
+        },
+        {
+          name:"Flixer",
+          url: currentType==="movie"
+            ? `https://flixer.su/watch/movie/${id}`
+            : `https://flixer.su/watch/tv/${id}/${season}/${episode}`,
+          sandbox:true
+        },
+        {
+          name:"Vidora (REALLY GOOD)",
+          url: currentType==="movie"
+            ? `https://watch.vidora.su/watch/movie/${id}`
+            : `https://watch.vidora.su/watch/tv/${id}/1/1`,
+          sandbox:true
+        }
+      ];
+
+      providers.forEach(p=>{
+        const btn = document.createElement("button");
+        btn.textContent = p.name;
+        btn.style.padding = "5px 10px";
+        btn.style.background="#e50914";
+        btn.style.color="#fff";
+        btn.style.border="none";
+        btn.style.borderRadius="4px";
+        btn.style.cursor="pointer";
+
+        btn.onclick = ()=>{
+          info.style.display = "none";
+          list.style.display = "none";
+          frameArea.innerHTML = "";
+          const iframe = document.createElement("iframe");
+          iframe.src = p.url;
+          iframe.style.cssText = `
+            margin:0;padding:0;display:block;
+            width:100vw;height:100vh;
+            border:none;
+            background:#000;
+          `;
+          iframe.allowFullscreen = true;
+          iframe.setAttribute("allow","autoplay; encrypted-media");
+          if(p.sandbox){
+            iframe.setAttribute("sandbox","allow-scripts allow-same-origin allow-presentation allow-forms");
+          }
+          frameArea.appendChild(iframe);
+        };
+        list.appendChild(btn);
+      });
+    }
+
+    closeBtn.onclick = () => {
+      overlay.style.display="none";
+      playerContainer.innerHTML="";
+    };
+
+    // Tabs
+    document.getElementById("moviesTab").onclick = () => switchType("movie");
+    document.getElementById("tvTab").onclick = () => switchType("tv");
+    function switchType(type){
+      currentType = type;
+      currentPage = 1;
+      currentQuery = null;
+      currentCategory = categories[type][0].value;
+      updateTabs();
+      renderCategories();
+      contentDiv.innerHTML = "";
+    }
+    function updateTabs(){
+      document.getElementById("moviesTab").classList.toggle("active", currentType==="movie");
+      document.getElementById("tvTab").classList.toggle("active", currentType==="tv");
+    }
+
+    // Categories
+    function renderCategories(){
+      categoriesDiv.innerHTML = "";
+      categories[currentType].forEach(cat=>{
+        const btn = document.createElement("button");
+        btn.textContent = cat.label;
+        btn.dataset.category = cat.value;
+        if(cat.value===currentCategory) btn.classList.add("active");
+        btn.onclick = ()=>{
+          currentCategory = cat.value;
+          currentPage = 1;
+          currentQuery = null;
+          document.querySelectorAll("#categoriesDiv button").forEach(b=>b.classList.remove("active"));
+          btn.classList.add("active");
+          contentDiv.innerHTML = "";
+        };
+        categoriesDiv.appendChild(btn);
+      });
+    }
+
+    // Search
+    searchBar.addEventListener("keypress", e=>{
+      if(e.key==="Enter"){
+        currentQuery = searchBar.value.trim();
+        currentPage = 1;
+        loadItems(true);
+      }
+    });
+
+    // PrimeTv Catalog
+    document.getElementById("primeCatalogBtn").onclick = () => {
+      overlay.style.display = "flex";
+      playerContainer.innerHTML = "";
+      const iframe = document.createElement("iframe");
+      iframe.src = "https://xprime.tv/";
+      iframe.style.cssText = `
+        margin:0;padding:0;display:block;
+        width:100vw;height:100vh;
+        border:none;
+        background:#000;
+      `;
+      iframe.setAttribute("sandbox","allow-scripts allow-same-origin allow-presentation allow-forms");
+      iframe.allowFullscreen = true;
+      playerContainer.appendChild(iframe);
+    };
+
+    // 345Movies Catalog
+    document.getElementById("movies345CatalogBtn").onclick = () => {
+      overlay.style.display = "flex";
+      playerContainer.innerHTML = "";
+      const iframe = document.createElement("iframe");
+      iframe.src = "https://345movie.net/movies";
+      iframe.style.cssText = `
+        margin:0;padding:0;display:block;
+        width:100vw;height:100vh;
+        border:none;
+        background:#000;
+      `;
+      iframe.setAttribute("sandbox","allow-same-origin");
+      iframe.allowFullscreen = true;
+      playerContainer.appendChild(iframe);
+    };
+
+    // Initial
+    renderCategories();
+  </script>
+</body>
+</html>          <h2 class="hero-title" id="heroTitle">Welcome to Media Hub</h2>
           <p class="hero-desc" id="heroDesc">Browse trending movies and TV shows, search fast, and open music in a full screen player. Click any tab in the top-right to get started — or explore the featured picks below.</p>
           <div class="hero-actions">
             <button class="cta primary" id="ctaMovies">Browse Movies</button>
