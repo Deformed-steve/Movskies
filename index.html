@@ -125,13 +125,12 @@
       playerContainer.appendChild(frameArea);
 
       const providers = [
-          {
-         name:"VidFast",
-         url: currentType==="movie"
-         ? `https://vidfast.pro/movie/${id}?autoPlay=true?theme=28B2FA`
-         : `https://vidfast.pro/tv/${id}?autoPlay=true?theme=28B2FA`,
-        sandbox:false
+        {
+        name: "VidFast",
+        url: `https://vidfast.pro/${currentType}/${id}?autoPlay=true&theme=28B2FA`,
+        sandbox: false
         },
+
         {
           name:"Vidsrc v1",
           url: `https://vidsrc.cc/v2/embed/${currentType}/${id}`,
