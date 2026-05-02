@@ -601,8 +601,9 @@
 const API_KEY = 'a63b70ca6288b339b0b556535449d1b9';
 const BASE = 'https://api.themoviedb.org/3';
 const IMG = 'https://image.tmdb.org/t/p/';
+// UPDATED SOURCE BASE[cite: 1]
 const PLAYER_BASE = 'https://novamath.net/player.html?type=';
-const PLAYER_PARAMS = '?color=e50914&autoPlay=true&nextEpisode=true';
+const PLAYER_PARAMS = ''; // Simplified params as they are often handled by the player site
 
 let heroItems = [];
 let heroIndex = 0;
@@ -672,6 +673,7 @@ function setHero(i) {
 function heroPlay() {
   const item = heroItems[heroIndex];
   if (!item) return;
+  // Kept TV logic for internal structure even if source is currently movie-only focused
   if (item.media_type === 'movie') {
     playMovie(item.id, item.title);
   } else {
@@ -848,7 +850,7 @@ async function openModal(id, mediaType) {
       `<span class="genre-pill">${g.name}</span>`
     ).join('');
 
-    // Season/Episode picker for TV
+    // Keeping Season/Episode picker for TV functionality
     if (mediaType === 'tv') {
       const seasons = (detail.seasons || []).filter(s => s.season_number > 0);
       if (seasons.length > 0) {
@@ -926,12 +928,14 @@ function closeModalBtn() {
 
 // ── PLAYER ──
 function playMovie(id, title) {
-  const url = `${PLAYER_BASE}/movie/${id}${PLAYER_PARAMS}`;
+  // Updated source link format[cite: 1]
+  const url = `${PLAYER_BASE}movie&id=${id}${PLAYER_PARAMS}`;
   openPlayer(url, title, 'Movie');
 }
 
 function playTV(id, title, season, episode) {
-  const url = `${PLAYER_BASE}/tv/${id}/${season}/${episode}${PLAYER_PARAMS}`;
+  // Keeping TV link format logic[cite: 1]
+  const url = `${PLAYER_BASE}tv&id=${id}&s=${season}&e=${episode}${PLAYER_PARAMS}`;
   openPlayer(url, title, `Season ${season} · Episode ${episode}`);
 }
 
